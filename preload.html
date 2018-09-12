@@ -1,0 +1,30 @@
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	
+		<title>Preload</title>
+
+	  <style>
+	   p {margin: 0}
+		 body {position: fixed;}
+	  </style>
+		
+	</head>
+<body id="seamless-scrollarea" style="width: 100%">
+
+	<div id="seamless" seamless-data="data" seamless-block-size="50">
+		<div id="block-template" class="seamless-block" style="position: fixed; top:-1000px; margin: 0">
+		</div>
+		<p id="cell-template"></p>
+	</div>
+
+
+	<script src="seamless.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" charset="utf-8">
+    var data = [];
+		for (i = 0; i < 100000000; i  = i + 1) {data[i] = i;}
+    seamlessInitialize(0);
+	</script>
+	
+</body>
+</html>
