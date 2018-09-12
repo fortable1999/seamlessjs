@@ -46,7 +46,7 @@ function getBlockData(block_idx){
 
 function getBlockDataMaxBlock(){
 	var blockSize = getSeamlessConfig().blockSize;
-    return Math.floor(getSeamlessData().length / blockSize);
+    return Math.ceil(getSeamlessData().length / blockSize);
 }
 
 
@@ -121,6 +121,9 @@ function preloadNext(){
     blockSetIndex(nextBlock, block_now + 1);
     nextBlock.style.top = currentBlock.offsetTop + currentBlock.offsetHeight;
     var nextData = getBlockData(block_now + 1);
+	if (nextData.length < 1) {
+		return
+	}
     drawData(nextBlock, nextData);
     drawBlock(nextBlock);
 }
@@ -152,17 +155,27 @@ function seamlessScroll() {
     var currentBlock = getCurrentBlock();
     var nextBlock = getNextBlock();
 
-    // stop scrolling at top
     if (block_now == 0 && currentBlock.offsetTop >= 0 && e.deltaY <= 0){
+        // stop scrolling at top
         currentBlock.style.top = 0;
-        nextBlock.style.top = currentBlock.offsetHeight;
+		if (nextBlock) {
+			nextBlock.style.top = currentBlock.offsetHeight;
+		}
         return
-    }
-
-    // stop scrolling at bottom
-    if (block_now == getBlockDataMaxBlock()  && currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight && e.deltaY > 0){
+    } else if (block_now + 1 == getBlockDataMaxBlock()  && currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight && e.deltaY > 0){
+        // stop scrolling at bottom
         currentBlock.style.top = window.innerHeight - currentBlock.offsetHeight;
-        previousBlock.style.top = window.innerHeight - currentBlock.offsetHeight - previousBlock.offsetHeight;
+		if (previousBlock) {
+			previousBlock.style.top = window.innerHeight - currentBlock.offsetHeight - previousBlock.offsetHeight;
+		}
+        return
+    } else if (nextBlock && block_now + 2 == getBlockDataMaxBlock()  && nextBlock.offsetTop + nextBlock.offsetHeight <= window.innerHeight && e.deltaY > 0){
+        // stop scrolling at bottom
+		nextBlock.style.top = window.innerHeight - nextBlock.offsetHeight;
+        currentBlock.style.top = window.innerHeight - currentBlock.offsetHeight - nextBlock.offsetHeight;
+		if (previousBlock) {
+			previousBlock.style.top = window.innerHeight - nextBlock.offsetHeight - currentBlock.offsetHeight - previousBlock.offsetHeight;
+		}
         return
     }
 
@@ -175,12 +188,14 @@ function seamlessScroll() {
     }
 
     if (e.deltaY > 0 && parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0) {
+		console.log(">>>>>", e.deltaY > 0, parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0, previousBlock, block_now);
         // Scrolling down
         if (previousBlock) {
             previousBlock.remove();
         }
         block_now = block_now + 1;
-        preloadNext(getCurrentBlock());
+        preloadNext();
+		console.log("<<<<", e.deltaY > 0, parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0, previousBlock, block_now);
     } else if (e.deltaY < 0 && parseInt(currentBlock.style.top) >= 0 && block_now > 0) {
         // Scrolling up
         if (nextBlock) {
@@ -188,6 +203,7 @@ function seamlessScroll() {
         }
         block_now = block_now - 1;
         preloadPrevious();
+		console.log("<<<<___", e.deltaY > 0, parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0, previousBlock, block_now);
     }
 }
 
