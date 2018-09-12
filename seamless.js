@@ -44,6 +44,11 @@ function getBlockData(block_idx){
     return getSeamlessData().slice(block_idx * blockSize, (block_idx + 1) * blockSize);
 }
 
+function getBlockDataMaxBlock(){
+	var blockSize = getSeamlessConfig().blockSize;
+    return Math.floor(getSeamlessData().length / blockSize);
+}
+
 
 //***************
 // Block methods
@@ -154,6 +159,12 @@ function seamlessScroll() {
         return
     }
 
+    // stop scrolling at bottom
+    if (block_now == getBlockDataMaxBlock()  && currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight && e.deltaY > 0){
+        currentBlock.style.top = window.innerHeight - currentBlock.offsetHeight;
+        previousBlock.style.top = window.innerHeight - currentBlock.offsetHeight - previousBlock.offsetHeight;
+        return
+    }
 
     scrollBlock(currentBlock, e.deltaY);
     if (previousBlock) {
