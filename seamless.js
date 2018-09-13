@@ -146,7 +146,7 @@ function preloadPrevious(){
 //***************
 
 function scrollBlock(block, deltaY) {
-    block.style.top = parseInt(block.style.top) - deltaY;
+    block.style.top = block.offsetTop - deltaY;
 }
 
 function seamlessScroll() {
@@ -155,6 +155,8 @@ function seamlessScroll() {
     var currentBlock = getCurrentBlock();
     var nextBlock = getNextBlock();
 
+	// console.log(block_now + 1 == getBlockDataMaxBlock(), currentBlock.offsetTop + currentBlock.offsetHeight, window.innerHeight, currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight, e.deltaY > 0);
+	// console.log("previousBlock", getPreviousBlock(), "current", getCurrentBlock(), "next", getNextBlock());
     if (block_now == 0 && currentBlock.offsetTop >= 0 && e.deltaY <= 0){
         // stop scrolling at top
         currentBlock.style.top = 0;
@@ -163,6 +165,7 @@ function seamlessScroll() {
 		}
         return
     } else if (block_now + 1 == getBlockDataMaxBlock()  && currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight && e.deltaY > 0){
+		console.log("stop 2");
         // stop scrolling at bottom
         currentBlock.style.top = window.innerHeight - currentBlock.offsetHeight;
 		if (previousBlock) {
@@ -187,23 +190,20 @@ function seamlessScroll() {
         scrollBlock(nextBlock, e.deltaY);
     }
 
-    if (e.deltaY > 0 && parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0) {
-		console.log(">>>>>", e.deltaY > 0, parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0, previousBlock, block_now);
+    if (e.deltaY > 0 && currentBlock.offsetTop + currentBlock.offsetHeight <= 0) {
         // Scrolling down
         if (previousBlock) {
             previousBlock.remove();
         }
         block_now = block_now + 1;
         preloadNext();
-		console.log("<<<<", e.deltaY > 0, parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0, previousBlock, block_now);
-    } else if (e.deltaY < 0 && parseInt(currentBlock.style.top) >= 0 && block_now > 0) {
+    } else if (e.deltaY < 0 && currentBlock.offsetTop >= 0 && block_now > 0) {
         // Scrolling up
         if (nextBlock) {
             nextBlock.remove();
         }
         block_now = block_now - 1;
         preloadPrevious();
-		console.log("<<<<___", e.deltaY > 0, parseInt(currentBlock.style.top) + currentBlock.offsetHeight <= 0, previousBlock, block_now);
     }
 }
 
