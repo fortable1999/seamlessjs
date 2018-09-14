@@ -116,14 +116,14 @@ function preloadCurrent(){
 }
 
 function preloadNext(){
-    var currentBlock = getCurrentBlock();
-    var nextBlock = createBlockFromTemplate();
-    blockSetIndex(nextBlock, block_now + 1);
-    nextBlock.style.top = currentBlock.offsetTop + currentBlock.offsetHeight;
     var nextData = getBlockData(block_now + 1);
 	if (nextData.length < 1) {
 		return
 	}
+    var currentBlock = getCurrentBlock();
+    var nextBlock = createBlockFromTemplate();
+    blockSetIndex(nextBlock, block_now + 1);
+    nextBlock.style.top = currentBlock.offsetTop + currentBlock.offsetHeight;
     drawData(nextBlock, nextData);
     drawBlock(nextBlock);
 }
@@ -149,55 +149,110 @@ function scrollBlock(block, deltaY) {
     block.style.top = block.offsetTop - deltaY;
 }
 
+function scrollBlockTop() {
+	var previousBlock = getPreviousBlock();
+	var currentBlock = getCurrentBlock();
+	var nextBlock = getNextBlock();
+	if (block_now == 0) {
+		// set top. no preload
+		currentBlock.style.top = 0;
+		if (nextBlock) {
+			nextBlock.style.top = currentBlock.offsetHeight;
+		}
+	} else {
+		// remove all blocks, preload
+		if (previousBlock) {
+			previousBlock.remove();
+		}
+		currentBlock.remove();
+		if (nextBlock) {
+			nextBlock.remove();
+		}
+		seamlessInitialize(0);
+	}
+}
+
+function scrollBlockBottom() {
+	var previousBlock = getPreviousBlock();
+	var currentBlock = getCurrentBlock();
+	var nextBlock = getNextBlock();
+	if (block_now + 1 >= getBlockDataMaxBlock()) {
+		// set top. no preload
+		currentBlock.remove();
+        preloadCurrent();
+	    currentBlock = getCurrentBlock();
+		currentBlock.style.top = window.innerHeight - currentBlock.offsetHeight;
+		if (previousBlock) {
+			previousBlock.style.top = window.innerHeight - currentBlock.offsetHeight - previousBlock.offsetHeight;
+		}
+	} else {
+		// remove all blocks, preload
+		if (previousBlock) {
+			previousBlock.remove();
+		}
+		currentBlock.remove();
+		if (nextBlock) {
+			nextBlock.remove();
+		}
+		seamlessInitialize(getBlockDataMaxBlock()-1);
+		scrollBlockBottom();
+	}
+}
+
 function seamlessScroll() {
     var e = window.event;
+	var deltaY = e.deltaY
     var previousBlock = getPreviousBlock();
     var currentBlock = getCurrentBlock();
     var nextBlock = getNextBlock();
 
-	// console.log(block_now + 1 == getBlockDataMaxBlock(), currentBlock.offsetTop + currentBlock.offsetHeight, window.innerHeight, currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight, e.deltaY > 0);
-	// console.log("previousBlock", getPreviousBlock(), "current", getCurrentBlock(), "next", getNextBlock());
-    if (block_now == 0 && currentBlock.offsetTop >= 0 && e.deltaY <= 0){
+    if (block_now == 0 && currentBlock.offsetTop >= 0 && deltaY <= 0){
         // stop scrolling at top
         currentBlock.style.top = 0;
 		if (nextBlock) {
 			nextBlock.style.top = currentBlock.offsetHeight;
 		}
         return
-    } else if (block_now + 1 == getBlockDataMaxBlock()  && currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight && e.deltaY > 0){
-		console.log("stop 2");
+    } else if (block_now + 1 == getBlockDataMaxBlock()  && currentBlock.offsetTop + currentBlock.offsetHeight <= window.innerHeight && deltaY > 0){
         // stop scrolling at bottom
         currentBlock.style.top = window.innerHeight - currentBlock.offsetHeight;
 		if (previousBlock) {
 			previousBlock.style.top = window.innerHeight - currentBlock.offsetHeight - previousBlock.offsetHeight;
 		}
         return
-    } else if (nextBlock && block_now + 2 == getBlockDataMaxBlock()  && nextBlock.offsetTop + nextBlock.offsetHeight <= window.innerHeight && e.deltaY > 0){
-        // stop scrolling at bottom
-		nextBlock.style.top = window.innerHeight - nextBlock.offsetHeight;
-        currentBlock.style.top = window.innerHeight - currentBlock.offsetHeight - nextBlock.offsetHeight;
-		if (previousBlock) {
-			previousBlock.style.top = window.innerHeight - nextBlock.offsetHeight - currentBlock.offsetHeight - previousBlock.offsetHeight;
-		}
-        return
-    }
+    } 
 
-    scrollBlock(currentBlock, e.deltaY);
+	// Limit deltaY border bottom
+	if (deltaY > 0) {
+		if (nextBlock && deltaY > nextBlock.offsetTop + nextBlock.offsetHeight - window.innerHeight) {
+			deltaY = nextBlock.offsetTop + nextBlock.offsetHeight - window.innerHeight;
+		} else if ((nextBlock === undefined) && deltaY > currentBlock.offsetTop + currentBlock.offsetHeight - window.innerHeight) {
+			deltaY = currentBlock.offsetTop + currentBlock.offsetHeight - window.innerHeight;
+		}
+	} else if (deltaY < 0) {
+		if (previousBlock && deltaY < previousBlock.offsetTop) {
+			deltaY = previousBlock.offsetTop;
+		} else if ((previousBlock === undefined) && deltaY < currentBlock.offsetTop) {
+			deltaY = currentBlock.offsetTop;
+		}
+	}
+
+    scrollBlock(currentBlock, deltaY);
     if (previousBlock) {
-        scrollBlock(previousBlock, e.deltaY);
+        scrollBlock(previousBlock, deltaY);
     }
     if (nextBlock) {
-        scrollBlock(nextBlock, e.deltaY);
+        scrollBlock(nextBlock, deltaY);
     }
 
-    if (e.deltaY > 0 && currentBlock.offsetTop + currentBlock.offsetHeight <= 0) {
+    if (deltaY > 0 && ((currentBlock.offsetTop + currentBlock.offsetHeight <= 0) || (nextBlock && nextBlock.offsetTop + nextBlock.offsetHeight <= window.innerHeight))) {
         // Scrolling down
         if (previousBlock) {
             previousBlock.remove();
         }
         block_now = block_now + 1;
         preloadNext();
-    } else if (e.deltaY < 0 && currentBlock.offsetTop >= 0 && block_now > 0) {
+    } else if (deltaY < 0 && currentBlock.offsetTop >= 0 && block_now > 0) {
         // Scrolling up
         if (nextBlock) {
             nextBlock.remove();
@@ -212,9 +267,11 @@ function seamlessScroll() {
 // Initialization
 //***************
 function seamlessInitialize(block_init){
-    if (block_init) {
-        block_now = block_init;
-    }
+    if (block_init === undefined) {
+        block_now = 0;
+    } else {
+		block_now = block_init;
+	}
     preloadCurrent();
     preloadPrevious();
     preloadNext();
